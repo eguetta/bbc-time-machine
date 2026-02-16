@@ -996,6 +996,10 @@
                 fetchMetadata();
             }
         })();
+        // ===== REGISTER SERVICE WORKER FOR PWA =====
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
     </script>
 </body>
 </html>
