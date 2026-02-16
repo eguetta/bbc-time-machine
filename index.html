@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBC Time Machine - 8 Hours Delayed</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .time-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .time-info strong {
+            color: #667eea;
+        }
+        
+        .channel-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .channel-btn {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .channel-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+        
+        .channel-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .channel-btn .channel-name {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .channel-btn .channel-desc {
+            display: block;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        /* Time Shift Selector */
+        .shift-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 12px 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        .shift-selector label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .shift-selector select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+        
+        .shift-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        /* Now Playing Info */
+        .now-playing {
+            margin-bottom: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9ff;
+            border: 1px solid #e8ecf4;
+            display: none;
+        }
+        
+        .now-playing.visible {
+            display: block;
+        }
+        
+        .now-playing-inner {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+        }
+        
+        .now-playing-art {
+            width: 64px;
+            height: 64px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            overflow: hidden;
+        }
+        
+        .now-playing-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .now-playing-text {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .now-playing-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .now-playing-programme {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .now-playing-programme .programme-subtitle {
+            font-weight: 400;
+            font-size: 12px;
+            color: #888;
+            display: block;
+            margin-top: 1px;
+        }
+        
+        .now-playing-track-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .now-playing-track {
+            font-size: 13px;
+            color: #666;
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .now-playing-track .artist {
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .like-btn {
+            background: none;
+            border: 1.5px solid #ccc;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .like-btn:hover {
+            border-color: #ff4757;
+            color: #ff4757;
+        }
+        
+        .like-btn.liked {
+            background: #ff4757;
+            border-color: #ff4757;
+            color: white;
+        }
+        
+        .like-btn.loading {
+            opacity: 0.5;
+            cursor: wait;
+        }
+        
+        .player-controls {
+            margin-top: 20px;
+        }
+        
+        .play-btn {
+            width: 100%;
+            padding: 18px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .play-btn.playing {
+            background: #ff4757;
+        }
+        
+        .play-btn.playing:hover {
+            background: #ee5a6f;
+        }
+        
+        .play-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status.playing {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        video {
+            display: none;
+        }
+        
+        @media (max-width: 500px) {
+            body {
+                padding: 10px;
+                align-items: flex-start;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 22px;
+                margin-bottom: 4px;
+            }
+            
+            .subtitle {
+                margin-bottom: 15px;
+                font-size: 12px;
+            }
+            
+            .time-info {
+                padding: 10px;
+                margin-bottom: 15px;
+                font-size: 14px;
+            }
+            
+            .channel-selector {
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+            
+            .channel-btn {
+                padding: 12px;
+            }
+            
+            .channel-btn .channel-name {
+                font-size: 16px;
+                margin-bottom: 2px;
+            }
+            
+            .channel-btn .channel-desc {
+                font-size: 11px;
+            }
+            
+            .shift-selector {
+                margin-bottom: 12px;
+                padding: 8px 12px;
+            }
+            
+            .shift-selector label {
+                font-size: 12px;
+            }
+            
+            .shift-selector select {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+            
+            .now-playing {
+                margin-bottom: 15px;
+            }
+            
+            .now-playing-inner {
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .now-playing-art {
+                width: 48px;
+                height: 48px;
+                font-size: 22px;
+            }
+            
+            .now-playing-programme {
+                font-size: 14px;
+            }
+            
+            .like-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+            
+            .play-btn {
+                padding: 14px;
+                font-size: 16px;
+            }
+            
+            .player-controls {
+                margin-top: 10px;
+            }
+            
+            .status {
+                margin-top: 12px;
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕐 BBC Time Machine</h1>
+        <p class="subtitle">Listen to BBC Radio on a time delay</p>
+        
+        <div class="time-info" id="timeInfo">
+            <div><strong>Your Time:</strong> <span id="pstTime">--:--</span> PST</div>
+            <div><strong>Playing:</strong> <span id="gmtTime">--:--</span> GMT</div>
+        </div>
+        
+        <div class="shift-selector">
+            <label for="timeShift">Time Delay:</label>
+            <select id="timeShift">
+                <option value="1">1 hour</option>
+                <option value="2">2 hours</option>
+                <option value="3">3 hours</option>
+                <option value="4">4 hours</option>
+                <option value="5">5 hours</option>
+                <option value="6">6 hours</option>
+                <option value="7">7 hours</option>
+                <option value="8" selected>8 hours (LA → London)</option>
+            </select>
+        </div>
+        
+        <div class="channel-selector">
+            <button class="channel-btn" data-channel="radio2">
+                <span class="channel-name">BBC Radio 2</span>
+                <span class="channel-desc">Pop & Rock</span>
+            </button>
+            <button class="channel-btn" data-channel="radio3">
+                <span class="channel-name">BBC Radio 3</span>
+                <span class="channel-desc">Classical & Jazz</span>
+            </button>
+            <button class="channel-btn" data-channel="radio4">
+                <span class="channel-name">BBC Radio 4</span>
+                <span class="channel-desc">News & Talk</span>
+            </button>
+            <button class="channel-btn" data-channel="radio6">
+                <span class="channel-name">BBC 6 Music</span>
+                <span class="channel-desc">Alternative</span>
+            </button>
+        </div>
+        
+        <!-- Now Playing Info -->
+        <div class="now-playing" id="nowPlaying">
+            <div class="now-playing-inner">
+                <div class="now-playing-art" id="nowPlayingArt">🎵</div>
+                <div class="now-playing-text">
+                    <div class="now-playing-label">On Air</div>
+                    <div class="now-playing-programme" id="nowPlayingProgramme">Loading...</div>
+                    <div class="now-playing-track-row">
+                        <div class="now-playing-track" id="nowPlayingTrack"></div>
+                        <button class="like-btn" id="likeBtn" title="Like on YouTube Music" style="display:none;">♡</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="player-controls">
+            <button class="play-btn" id="playBtn">▶ Play</button>
+        </div>
+        
+        <div class="status stopped" id="status">Select a channel and press Play</div>
+        
+        <video id="audioPlayer" controls></video>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    
+    <script>
+        // CONFIGURATION
+        const PLAYER_API_URL = 'https://zvkhndo5eukbokd6l4rrftohwi0flajr.lambda-url.us-west-1.on.aws/';
+        const METADATA_POLL_MS = 30000;
+        const GOOGLE_CLIENT_ID = '530879387813-hq6415jcdr982u6dk5r9e7ve8s2dk13r.apps.googleusercontent.com';
+        
+        let selectedChannel = 'radio3';
+        let timeShiftHours = 8;
+        let hls = null;
+        let isPlaying = false;
+        let metadataInterval = null;
+        let googleAccessToken = null;
+        let currentTrackArtist = '';
+        let currentTrackTitle = '';
+        let likedTracks = JSON.parse(localStorage.getItem('bbc_liked') || '{}');
+        
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const statusDiv = document.getElementById('status');
+        const nowPlayingDiv = document.getElementById('nowPlaying');
+        const nowPlayingProgramme = document.getElementById('nowPlayingProgramme');
+        const nowPlayingTrack = document.getElementById('nowPlayingTrack');
+        const nowPlayingArt = document.getElementById('nowPlayingArt');
+        const likeBtn = document.getElementById('likeBtn');
+        
+        // ===== YOUTUBE MUSIC LIKE =====
+        function getTrackKey(artist, title) {
+            return (artist + '|' + title).toLowerCase();
+        }
+        
+        function requestGoogleAuth(callback) {
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/youtube.force-ssl',
+                callback: (response) => {
+                    if (response.access_token) {
+                        googleAccessToken = response.access_token;
+                        callback();
+                    }
+                }
+            });
+            client.requestAccessToken();
+        }
+        
+        async function searchYouTubeMusic(artist, title) {
+            const query = artist + ' ' + title + ' official audio';
+            const url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
+                + '&type=video'
+                + '&videoCategoryId=10'
+                + '&maxResults=1'
+                + '&q=' + encodeURIComponent(query);
+            
+            const response = await fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + googleAccessToken }
+            });
+            
+            if (!response.ok) return null;
+            
+            const data = await response.json();
+            if (data.items && data.items.length > 0) {
+                return data.items[0].id.videoId;
+            }
+            return null;
+        }
+        
+        async function likeYouTubeVideo(videoId) {
+            const url = 'https://www.googleapis.com/youtube/v3/videos/rate'
+                + '?id=' + videoId
+                + '&rating=like';
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + googleAccessToken }
+            });
+            
+            return response.ok || response.status === 204;
+        }
+        
+        async function handleLike() {
+            if (!currentTrackArtist || !currentTrackTitle) return;
+            
+            const key = getTrackKey(currentTrackArtist, currentTrackTitle);
+            
+            // Already liked
+            if (likedTracks[key]) {
+                return;
+            }
+            
+            likeBtn.classList.add('loading');
+            likeBtn.textContent = '...';
+            
+            try {
+                // Auth if needed
+                if (!googleAccessToken) {
+                    await new Promise((resolve) => requestGoogleAuth(resolve));
+                }
+                
+                // Search for the track
+                const videoId = await searchYouTubeMusic(currentTrackArtist, currentTrackTitle);
+                
+                if (!videoId) {
+                    likeBtn.textContent = '✗';
+                    setTimeout(() => { updateLikeButton(); }, 2000);
+                    return;
+                }
+                
+                // Like it
+                const success = await likeYouTubeVideo(videoId);
+                
+                if (success) {
+                    likedTracks[key] = { videoId: videoId, time: Date.now() };
+                    localStorage.setItem('bbc_liked', JSON.stringify(likedTracks));
+                    likeBtn.classList.add('liked');
+                    likeBtn.textContent = '♥';
+                } else {
+                    // Token might be expired, clear it
+                    googleAccessToken = null;
+                    likeBtn.textContent = '✗';
+                    setTimeout(() => { updateLikeButton(); }, 2000);
+                }
+            } catch (e) {
+                console.error('Like error:', e);
+                googleAccessToken = null;
+                likeBtn.textContent = '✗';
+                setTimeout(() => { updateLikeButton(); }, 2000);
+            }
+            
+            likeBtn.classList.remove('loading');
+        }
+        
+        function updateLikeButton() {
+            if (!currentTrackArtist || !currentTrackTitle) {
+                likeBtn.style.display = 'none';
+                return;
+            }
+            
+            likeBtn.style.display = 'flex';
+            const key = getTrackKey(currentTrackArtist, currentTrackTitle);
+            
+            if (likedTracks[key]) {
+                likeBtn.classList.add('liked');
+                likeBtn.textContent = '♥';
+            } else {
+                likeBtn.classList.remove('liked');
+                likeBtn.textContent = '♡';
+            }
+        }
+        
+        likeBtn.addEventListener('click', handleLike);
+        
+        // ===== PERSISTENCE =====
+        function saveState() {
+            localStorage.setItem('bbc_channel', selectedChannel);
+            localStorage.setItem('bbc_playing', isPlaying ? '1' : '0');
+            localStorage.setItem('bbc_shift', timeShiftHours);
+        }
+        
+        function loadState() {
+            const savedChannel = localStorage.getItem('bbc_channel');
+            const wasPlaying = localStorage.getItem('bbc_playing') === '1';
+            const savedShift = localStorage.getItem('bbc_shift');
+            return { savedChannel, wasPlaying, savedShift };
+        }
+        
+        function selectChannelUI(channel) {
+            selectedChannel = channel;
+            document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`.channel-btn[data-channel="${channel}"]`);
+            if (btn) btn.classList.add('active');
+        }
+        
+        // ===== TIME DISPLAY =====
+        function updateTimeDisplay() {
+            const now = new Date();
+            
+            const pstTime = now.toLocaleTimeString('en-US', {
+                timeZone: 'America/Los_Angeles',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const gmtTime = new Date(now.getTime() - (timeShiftHours * 60 * 60 * 1000));
+            const gmtTimeStr = gmtTime.toLocaleTimeString('en-US', {
+                timeZone: 'Europe/London',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            document.getElementById('pstTime').textContent = pstTime;
+            document.getElementById('gmtTime').textContent = gmtTimeStr;
+        }
+        
+        updateTimeDisplay();
+        setInterval(updateTimeDisplay, 1000);
+        
+        // ===== TIME SHIFT SELECTOR =====
+        const timeShiftSelect = document.getElementById('timeShift');
+        timeShiftSelect.addEventListener('change', () => {
+            timeShiftHours = parseInt(timeShiftSelect.value);
+            saveState();
+            updateTimeDisplay();
+            
+            if (isPlaying) {
+                // Restart stream with new shift
+                stopPlayback();
+                startPlayback();
+            }
+        });
+        
+        // ===== METADATA =====
+        async function fetchMetadata() {
+            try {
+                const url = `${PLAYER_API_URL}?action=metadata&channel=${selectedChannel}&shift=${timeShiftHours}`;
+                const response = await fetch(url);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                updateNowPlaying(data);
+            } catch (e) {
+                console.error('Metadata fetch error:', e);
+            }
+        }
+        
+        function updateNowPlaying(data) {
+            const hasProgramme = data.programme && data.programme.title;
+            const hasTrack = data.track && data.track.artist;
+            
+            if (!hasProgramme && !hasTrack) {
+                nowPlayingDiv.classList.remove('visible');
+                return;
+            }
+            
+            nowPlayingDiv.classList.add('visible');
+            
+            if (hasProgramme) {
+                nowPlayingProgramme.textContent = data.programme.title;
+                if (data.programme.subtitle) {
+                    nowPlayingProgramme.innerHTML = escapeHtml(data.programme.title) + '<span class="programme-subtitle"> — ' + escapeHtml(data.programme.subtitle) + '</span>';
+                }
+            } else {
+                nowPlayingProgramme.textContent = '';
+            }
+            
+            if (hasTrack) {
+                nowPlayingTrack.innerHTML = '<span class="artist">' + escapeHtml(data.track.artist) + '</span> — ' + escapeHtml(data.track.title);
+                currentTrackArtist = data.track.artist;
+                currentTrackTitle = data.track.title;
+            } else {
+                nowPlayingTrack.textContent = '';
+                currentTrackArtist = '';
+                currentTrackTitle = '';
+            }
+            
+            updateLikeButton();
+            
+            // Update notification shade with track info
+            if (isPlaying) updateMediaSession();
+            
+            if (hasTrack && data.track.image_url) {
+                nowPlayingArt.innerHTML = '<img src="' + data.track.image_url + '" alt="" onerror="this.parentElement.innerHTML=\'🎵\'">';
+            } else if (hasProgramme && data.programme.image_url) {
+                nowPlayingArt.innerHTML = '<img src="' + data.programme.image_url + '" alt="" onerror="this.parentElement.innerHTML=\'🎵\'">';
+            } else {
+                nowPlayingArt.innerHTML = '🎵';
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function updateMediaSession() {
+            if ('mediaSession' in navigator) {
+                const channelName = document.querySelector('.channel-btn.active .channel-name').textContent;
+                const programme = document.getElementById('nowPlayingProgramme').textContent || channelName;
+                const trackLine = currentTrackArtist ? (currentTrackArtist + ' — ' + currentTrackTitle) : '';
+                
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: trackLine || programme,
+                    artist: trackLine ? programme : channelName,
+                    album: channelName
+                });
+                navigator.mediaSession.setActionHandler('play', () => { startPlayback(); });
+                navigator.mediaSession.setActionHandler('pause', () => { stopPlayback(); });
+                navigator.mediaSession.setActionHandler('stop', () => { stopPlayback(); });
+            }
+        }
+        
+        function startMetadataPolling() {
+            fetchMetadata();
+            if (metadataInterval) clearInterval(metadataInterval);
+            metadataInterval = setInterval(fetchMetadata, METADATA_POLL_MS);
+        }
+        
+        function stopMetadataPolling() {
+            if (metadataInterval) {
+                clearInterval(metadataInterval);
+                metadataInterval = null;
+            }
+            nowPlayingDiv.classList.remove('visible');
+            currentTrackArtist = '';
+            currentTrackTitle = '';
+            likeBtn.style.display = 'none';
+        }
+        
+        // ===== CHANNEL SELECTION =====
+        document.querySelectorAll('.channel-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedChannel = btn.dataset.channel;
+                saveState();
+                
+                if (isPlaying) {
+                    switchChannel();
+                    startMetadataPolling();
+                        updateMediaSession();
+                } else {
+                    statusDiv.className = 'status stopped';
+                    statusDiv.textContent = btn.querySelector('.channel-name').textContent + ' selected';
+                }
+            });
+        });
+        
+        // ===== PLAY / STOP =====
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        });
+        
+        async function startPlayback() {
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.textContent = 'Loading stream...';
+                playBtn.disabled = true;
+                
+                const streamUrl = PLAYER_API_URL + '?channel=' + selectedChannel + '&shift=' + timeShiftHours;
+                
+                if (Hls.isSupported()) {
+                    if (hls) {
+                        hls.destroy();
+                    }
+                    
+                    hls = new Hls({
+                        enableWorker: true,
+                        lowLatencyMode: false,
+                        backBufferLength: 90,
+                        liveSyncDurationCount: 3,
+                        liveMaxLatencyDurationCount: 10,
+                        maxBufferLength: 60
+                    });
+                    
+                    hls.loadSource(streamUrl);
+                    hls.attachMedia(audioPlayer);
+                    
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        audioPlayer.play().then(() => {
+                            isPlaying = true;
+                            playBtn.textContent = '■ Stop';
+                            playBtn.classList.add('playing');
+                            playBtn.disabled = false;
+                            statusDiv.className = 'status playing';
+                            statusDiv.textContent = '🔴 Playing ' + document.querySelector('.channel-btn.active .channel-name').textContent;
+                            saveState();
+                            startMetadataPolling();
+                        updateMediaSession();
+                        }).catch(() => {
+                            // Autoplay blocked — stream is loaded but needs user tap
+                            isPlaying = false;
+                            playBtn.textContent = '▶ Tap to Resume';
+                            playBtn.classList.remove('playing');
+                            playBtn.disabled = false;
+                            statusDiv.className = 'status loading';
+                            statusDiv.textContent = 'Stream ready — tap Play to resume';
+                            localStorage.setItem('bbc_playing', '0');
+                        });
+                    });
+                    
+                    hls.on(Hls.Events.ERROR, (event, data) => {
+                        console.error('HLS Error:', data);
+                        if (data.fatal) {
+                            statusDiv.className = 'status stopped';
+                            statusDiv.textContent = 'Error loading stream. Please try again.';
+                            stopPlayback();
+                        }
+                    });
+                    
+                } else if (audioPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                    audioPlayer.src = streamUrl;
+                    try {
+                        await audioPlayer.play();
+                        isPlaying = true;
+                        playBtn.textContent = '■ Stop';
+                        playBtn.classList.add('playing');
+                        playBtn.disabled = false;
+                        statusDiv.className = 'status playing';
+                        statusDiv.textContent = '🔴 Playing ' + document.querySelector('.channel-btn.active .channel-name').textContent;
+                        saveState();
+                        startMetadataPolling();
+                        updateMediaSession();
+                    } catch (e) {
+                        isPlaying = false;
+                        playBtn.textContent = '▶ Tap to Resume';
+                        playBtn.classList.remove('playing');
+                        playBtn.disabled = false;
+                        statusDiv.className = 'status loading';
+                        statusDiv.textContent = 'Stream ready — tap Play to resume';
+                        localStorage.setItem('bbc_playing', '0');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Playback error:', error);
+                statusDiv.className = 'status stopped';
+                statusDiv.textContent = 'Failed to play. Check console for details.';
+                playBtn.disabled = false;
+            }
+        }
+        
+        async function switchChannel() {
+            statusDiv.className = 'status loading';
+            statusDiv.textContent = 'Switching channel...';
+            
+            const streamUrl = PLAYER_API_URL + '?channel=' + selectedChannel + '&shift=' + timeShiftHours;
+            
+            if (hls) {
+                hls.loadSource(streamUrl);
+            } else if (audioPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                audioPlayer.src = streamUrl;
+                await audioPlayer.play();
+            }
+            
+            statusDiv.className = 'status playing';
+            statusDiv.textContent = '🔴 Playing ' + document.querySelector('.channel-btn.active .channel-name').textContent;
+        }
+        
+        function stopPlayback() {
+            if (hls) {
+                hls.destroy();
+                hls = null;
+            }
+            
+            audioPlayer.pause();
+            audioPlayer.src = '';
+            
+            isPlaying = false;
+            playBtn.textContent = '▶ Play';
+            playBtn.classList.remove('playing');
+            playBtn.disabled = false;
+            statusDiv.className = 'status stopped';
+            statusDiv.textContent = 'Stopped';
+            saveState();
+            stopMetadataPolling();
+        }
+        
+        // ===== REFRESH METADATA ON TAB RETURN =====
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && isPlaying) {
+                fetchMetadata();
+            }
+        });
+        
+        // ===== RESTORE STATE ON PAGE LOAD =====
+        (function restoreOnLoad() {
+            const { savedChannel, wasPlaying, savedShift } = loadState();
+            
+            if (savedChannel) {
+                selectChannelUI(savedChannel);
+            }
+            
+            if (savedShift !== null) {
+                timeShiftHours = parseInt(savedShift);
+                timeShiftSelect.value = timeShiftHours;
+                updateTimeDisplay();
+            }
+            
+            if (wasPlaying) {
+                // Don't try autoplay — browsers block it. Just show resume prompt.
+                playBtn.textContent = '▶ Tap to Resume';
+                statusDiv.className = 'status loading';
+                statusDiv.textContent = 'Tap Play to resume ' + document.querySelector('.channel-btn.active .channel-name').textContent;
+                // Show what's on air
+                fetchMetadata();
+            }
+        })();
+    </script>
+</body>
+</html>
