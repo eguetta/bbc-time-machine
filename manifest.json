@@ -2,7 +2,7 @@
     "name": "BBC Time Machine",
     "short_name": "BBC Time",
     "description": "Listen to BBC Radio 8 hours delayed",
-    "start_url": "/index.html",
+    "start_url": “./index.html",
     "display": "standalone",
     "background_color": "#667eea",
     "theme_color": "#667eea",
