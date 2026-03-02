@@ -857,9 +857,10 @@
                     hls = new Hls({
                         enableWorker: true,
                         lowLatencyMode: false,
-                        backBufferLength: 600,
-                        maxBufferLength: 600,
-                        maxMaxBufferLength: 600
+                        backBufferLength: 300,
+                        liveSyncDurationCount: 3,
+                        liveMaxLatencyDurationCount: 10,
+                        maxBufferLength: 120
                     });
                     
                     hls.loadSource(streamUrl);
@@ -896,14 +897,6 @@
                             stopPlayback();
                         }
                     });
-                    
-                    // Auto-reload when reaching end of VOD playlist
-                    audioPlayer.onended = () => {
-                        if (isPlaying) {
-                            console.log('Reached end of playlist, reloading...');
-                            startPlayback();
-                        }
-                    };
                     
                 } else if (audioPlayer.canPlayType('application/vnd.apple.mpegurl')) {
                     audioPlayer.src = streamUrl;
