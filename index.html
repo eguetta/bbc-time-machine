@@ -858,8 +858,6 @@
                         enableWorker: true,
                         lowLatencyMode: false,
                         backBufferLength: 600,
-                        liveSyncDurationCount: 1,
-                        liveMaxLatencyDurationCount: 3,
                         maxBufferLength: 600,
                         maxMaxBufferLength: 600
                     });
@@ -868,6 +866,17 @@
                     hls.attachMedia(audioPlayer);
                     
                     hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        // Seek to near the end so we play the current time-shifted position
+                        function seekToEnd() {
+                            if (audioPlayer.duration && isFinite(audioPlayer.duration) && audioPlayer.duration > 300) {
+                                audioPlayer.currentTime = Math.max(0, audioPlayer.duration - 300);
+                            }
+                        }
+                        if (audioPlayer.duration && isFinite(audioPlayer.duration)) {
+                            seekToEnd();
+                        } else {
+                            audioPlayer.addEventListener('loadedmetadata', seekToEnd, { once: true });
+                        }
                         audioPlayer.play().then(() => {
                             isPlaying = true;
                             playBtn.textContent = '■ Stop';
@@ -898,6 +907,14 @@
                             stopPlayback();
                         }
                     });
+                    
+                    // Auto-reload when reaching end of VOD playlist
+                    audioPlayer.onended = () => {
+                        if (isPlaying) {
+                            console.log('Reached end of playlist, reloading...');
+                            startPlayback();
+                        }
+                    };
                     
                 } else if (audioPlayer.canPlayType('application/vnd.apple.mpegurl')) {
                     audioPlayer.src = streamUrl;
