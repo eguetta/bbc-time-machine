@@ -755,18 +755,16 @@
             // Check if we have a saved credential
             const saved = localStorage.getItem('bbc_google_credential');
             if (saved) {
-                const payload = parseJwt(saved);
-                // Google ID tokens expire after 1 hour, but we just use them for identity
-                // Re-verify silently via auto_select; meanwhile show app if email matches
+                let payload = null;
+                if (saved.startsWith('oauth2:')) {
+                    try { payload = JSON.parse(saved.slice(7)); } catch(e) {}
+                } else {
+                    payload = parseJwt(saved);
+                }
                 if (payload && payload.email === ALLOWED_EMAIL) {
-                    showApp({
-                        name: payload.name,
-                        email: payload.email,
-                        picture: payload.picture
-                    });
+                    showApp({ name: payload.name, email: payload.email, picture: payload.picture });
                     restoreOnLoad();
-                    // Also trigger silent re-auth in background to refresh the token
-                    google.accounts.id.prompt();
+                    google.accounts.id.prompt(); // silent refresh in background
                     return;
                 }
             }
@@ -778,7 +776,29 @@
         });
 
         document.getElementById('googleSignInBtn').addEventListener('click', () => {
-            google.accounts.id.prompt();
+            // Use OAuth2 token client as a reliable fallback — works on all browsers
+            const client = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'openid email profile',
+                callback: async (tokenResponse) => {
+                    if (!tokenResponse.access_token) return;
+                    // Fetch user info with the token
+                    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+                    });
+                    const user = await res.json();
+                    if (user.email !== ALLOWED_EMAIL) {
+                        alert('Access denied. This app is private.');
+                        return;
+                    }
+                    // Build a fake credential payload and save it
+                    const fakePayload = { email: user.email, name: user.name, picture: user.picture };
+                    localStorage.setItem('bbc_google_credential', 'oauth2:' + JSON.stringify(fakePayload));
+                    showApp(fakePayload);
+                    restoreOnLoad();
+                }
+            });
+            client.requestAccessToken();
         });
 
         // ===== YOUTUBE MUSIC LIKE =====
