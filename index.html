@@ -1152,9 +1152,30 @@
                     hls.on(Hls.Events.ERROR, (event, data) => {
                         console.error('HLS Error:', data);
                         if (data.fatal) {
-                            statusDiv.className = 'status stopped';
-                            statusDiv.textContent = 'Error loading stream. Please try again.';
-                            stopPlayback();
+                            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                                // Network hiccup — try to recover automatically
+                                console.log('Network error, auto-recovering in 3s...');
+                                statusDiv.className = 'status loading';
+                                statusDiv.textContent = '⟳ Connection lost, reconnecting...';
+                                setTimeout(() => {
+                                    if (isPlaying) {
+                                        hls.loadSource(PLAYER_API_URL + '?channel=' + selectedChannel + '&shift=' + timeShiftHours);
+                                        hls.startLoad();
+                                    }
+                                }, 3000);
+                            } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                                // Media decode error — try recover first
+                                console.log('Media error, attempting recovery...');
+                                hls.recoverMediaError();
+                            } else {
+                                // Unrecoverable — restart cleanly
+                                console.log('Fatal error, restarting stream...');
+                                statusDiv.className = 'status loading';
+                                statusDiv.textContent = '⟳ Restarting stream...';
+                                setTimeout(() => {
+                                    if (isPlaying) startPlayback();
+                                }, 3000);
+                            }
                         }
                     });
                     
@@ -1226,10 +1247,17 @@
             stopMetadataPolling();
         }
         
-        // ===== REFRESH METADATA ON TAB RETURN =====
+        // ===== AUTO-RESUME AFTER SCREEN LOCK / TAB SWITCH =====
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && isPlaying) {
                 fetchMetadata();
+                // If audio has stalled (e.g. after phone screen lock), restart it
+                if (audioPlayer.paused) {
+                    console.log('Audio paused after visibility change, restarting...');
+                    statusDiv.className = 'status loading';
+                    statusDiv.textContent = '\u27F3 Resuming...';
+                    startPlayback();
+                }
             }
         });
         
